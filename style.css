@@ -6,7 +6,7 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-color: #6d94b0;
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -24,11 +24,6 @@ body {
     text-align: center;
 }
 
-.lock-icon {
-    font-size: 60px;
-    margin-bottom: 20px;
-}
-
 h1 {
     color: #333;
     font-size: 42px;
@@ -37,30 +32,29 @@ h1 {
 }
 
 .subtitle {
-    color: #667eea;
+    color: black;
     font-size: 16px;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
     margin-bottom: 30px;
     text-transform: uppercase;
 }
 
 .purpose-section {
-    background: #f8f9fa;
+    background: #8cadcd;
     padding: 30px;
     border-radius: 10px;
     margin-bottom: 40px;
-    border-left: 5px solid #667eea;
 }
 
 .purpose-section p {
-    color: #555;
+    color: BLACK;
     font-size: 16px;
     line-height: 1.8;
     margin-bottom: 0;
 }
 
-.cta-button {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.start-button {
+    background: #6d94b0;
     color: white;
     border: none;
     padding: 15px 50px;
@@ -69,15 +63,15 @@ h1 {
     border-radius: 50px;
     cursor: pointer;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
-    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 10px 30px rgba(125, 125, 125, 0.4);
 }
 
-.cta-button:hover {
+.start-button:hover {
     transform: translateY(-3px);
-    box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6);
+    box-shadow: 0 15px 40px rgba(116, 116, 116, 0.6);
 }
 
-.cta-button:active {
+.start-button:active {
     transform: translateY(-1px);
 }
 
