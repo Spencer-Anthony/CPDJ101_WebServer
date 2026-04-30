@@ -1,3 +1,4 @@
+
 from quart import Quart
 from quart import render_template
 import asyncio
@@ -11,7 +12,7 @@ def run() -> None:
 
 @app.get("/")
 async def index():
-    return await render_template("index.html")
+    return await render_template("index.html", template_folder="src/chat")
 
 broker = Broker()
 

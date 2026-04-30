@@ -17,6 +17,14 @@ packages = [{include = "chat", from = "src"}]
 [tool.poetry.scripts]
 start = "chat:run"
 
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "pytest-asyncio (>=1.3.0,<2.0.0)"
+]
