@@ -1,27 +1,205 @@
-<script type="text/javascript">
-  const ws = new WebSocket(`ws://${location.host}/ws`);
-
-  ws.addEventListener('message', function (event) {
-    const li = document.createElement("li");
-    li.appendChild(document.createTextNode(event.data));
-    document.getElementById("messages").appendChild(li);
-  });
-
-  function send(event) {
-    const message = (new FormData(event.target)).get("message");
-    if (message) {
-      ws.send(message);
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chat Room</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --border: #dde3ec;
+      --text: #1f2a37;
+      --muted: #6b7685;
+      --brand: #0f62fe;
+      --brand-hover: #0b4fd1;
     }
-    event.target.reset();
-    return false;
-  }
-</script>
 
-<div style="display: flex; height: 100%; flex-direction: column">
-  <ul id="messages" style="flex-grow: 1; list-style-type: none"></ul>
+    * {
+      box-sizing: border-box;
+    }
 
-  <form onsubmit="return send(event)">
-    <input type="text" name="message" minlength="1" />
-    <button type="submit">Send</button>
-  </form>
-</div>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at top, #ffffff 0%, var(--bg) 65%);
+      display: grid;
+      place-items: center;
+      padding: 16px;
+    }
+
+    .chat {
+      width: min(760px, 100%);
+      height: min(80vh, 680px);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(15, 25, 40, 0.08);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    .chat-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fbfcfe;
+    }
+
+    .chat-title {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    .status {
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+
+    .messages {
+      margin: 0;
+      padding: 16px;
+      list-style: none;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    }
+
+    .message {
+      max-width: min(85%, 540px);
+      padding: 10px 12px;
+      border: 1px solid #d5dfed;
+      border-radius: 10px;
+      background: #ffffff;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      word-break: break-word;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    }
+
+    .composer {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      padding: 12px;
+      border-top: 1px solid var(--border);
+      background: #ffffff;
+    }
+
+    .composer input {
+      min-height: 42px;
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid #cad4e4;
+      padding: 0 12px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    .composer input:focus {
+      border-color: var(--brand);
+      box-shadow: 0 0 0 3px rgba(15, 98, 254, 0.12);
+    }
+
+    .composer button {
+      min-height: 42px;
+      border: 0;
+      border-radius: 10px;
+      background: var(--brand);
+      color: #fff;
+      padding: 0 16px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 120ms ease;
+    }
+
+    .composer button:hover {
+      background: var(--brand-hover);
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 8px;
+      }
+
+      .chat {
+        height: 92vh;
+        border-radius: 10px;
+      }
+
+      .composer {
+        grid-template-columns: 1fr;
+      }
+
+      .composer button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="chat" aria-label="Chat interface">
+    <header class="chat-header">
+      <h1 class="chat-title">Basic Chat</h1>
+      <span id="connection-status" class="status">Connecting...</span>
+    </header>
+
+    <ul id="messages" class="messages"></ul>
+
+    <form class="composer" onsubmit="return send(event)">
+      <input type="text" name="message" minlength="1" maxlength="500" placeholder="Type a message" autocomplete="off" required />
+      <button type="submit">Send</button>
+    </form>
+  </main>
+
+  <script>
+    const messages = document.getElementById("messages");
+    const status = document.getElementById("connection-status");
+    const ws = new WebSocket(`ws://${location.host}/ws`);
+
+    function appendMessage(content) {
+      const li = document.createElement("li");
+      li.className = "message";
+      li.textContent = content;
+      messages.appendChild(li);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    ws.addEventListener("open", () => {
+      status.textContent = "Connected";
+    });
+
+    ws.addEventListener("close", () => {
+      status.textContent = "Disconnected";
+    });
+
+    ws.addEventListener("message", (event) => {
+      appendMessage(event.data);
+    });
+
+    function send(event) {
+      event.preventDefault();
+
+      const form = event.target;
+      const message = (new FormData(form)).get("message");
+
+      if (message && ws.readyState === WebSocket.OPEN) {
+        ws.send(message);
+      }
+
+      form.reset();
+      return false;
+    }
+  </script>
+</body>
+</html>
