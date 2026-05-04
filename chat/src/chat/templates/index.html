@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Chat Room</title>
+  <title>SecureChat Room</title>
   <style>
     :root {
-      --bg: #f4f7fb;
+      --bg: #6d94b0;
       --panel: #ffffff;
-      --border: #dde3ec;
+      --border: #d5dfed;
       --text: #1f2a37;
-      --muted: #6b7685;
-      --brand: #0f62fe;
-      --brand-hover: #0b4fd1;
+      --muted: #66758a;
+      --brand: #2b6cb0;
+      --brand-hover: #1f4f82;
     }
 
     * {
@@ -24,42 +24,40 @@
       min-height: 100vh;
       font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
       color: var(--text);
-      background: radial-gradient(circle at top, #ffffff 0%, var(--bg) 65%);
+      background: linear-gradient(180deg, #6d94b0 0%, #8cadcd 100%);
       display: grid;
       place-items: center;
       padding: 16px;
     }
 
     .chat {
-      width: min(760px, 100%);
-      height: min(80vh, 680px);
+      width: min(860px, 100%);
+      height: min(84vh, 720px);
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 10px 30px rgba(15, 25, 40, 0.08);
+      box-shadow: 0 14px 36px rgba(10, 20, 35, 0.2);
       display: grid;
       grid-template-rows: auto 1fr auto;
     }
 
     .chat-header {
-      padding: 14px 18px;
+      padding: 14px 16px;
       border-bottom: 1px solid var(--border);
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      background: #fbfcfe;
+      justify-content: space-between;
+      background: #f8fbff;
     }
 
     .chat-title {
       margin: 0;
-      font-size: 1rem;
-      font-weight: 600;
-      letter-spacing: 0.01em;
+      font-size: 1.05rem;
     }
 
     .status {
-      font-size: 0.875rem;
+      font-size: 0.9rem;
       color: var(--muted);
     }
 
@@ -71,78 +69,75 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
-      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+      background: #ffffff;
     }
 
     .message {
       max-width: min(85%, 540px);
-      padding: 10px 12px;
-      border: 1px solid #d5dfed;
+      border: 1px solid var(--border);
       border-radius: 10px;
-      background: #ffffff;
-      font-size: 0.95rem;
+      padding: 10px 12px;
       line-height: 1.4;
       word-break: break-word;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+      background: #f8fbff;
     }
 
     .composer {
       display: grid;
-      grid-template-columns: 1fr auto;
+      grid-template-columns: 1fr auto auto;
       gap: 10px;
-      padding: 12px;
       border-top: 1px solid var(--border);
+      padding: 12px;
       background: #ffffff;
     }
 
     .composer input {
       min-height: 42px;
-      width: 100%;
+      border: 1px solid #c7d3e2;
       border-radius: 10px;
-      border: 1px solid #cad4e4;
       padding: 0 12px;
       font-size: 0.95rem;
-      outline: none;
     }
 
-    .composer input:focus {
-      border-color: var(--brand);
-      box-shadow: 0 0 0 3px rgba(15, 98, 254, 0.12);
-    }
-
-    .composer button {
+    .composer button,
+    .composer a {
       min-height: 42px;
       border: 0;
       border-radius: 10px;
-      background: var(--brand);
       color: #fff;
-      padding: 0 16px;
-      font-size: 0.95rem;
       font-weight: 600;
+      font-size: 0.95rem;
+      padding: 0 14px;
       cursor: pointer;
-      transition: background-color 120ms ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .composer button:hover {
+    #send {
+      background: var(--brand);
+    }
+
+    #send:hover {
       background: var(--brand-hover);
     }
 
-    @media (max-width: 640px) {
-      body {
-        padding: 8px;
-      }
+    .home-link {
+      background: #7289a3;
+    }
 
+    .home-link:hover {
+      background: #5f748c;
+    }
+
+    @media (max-width: 700px) {
       .chat {
         height: 92vh;
-        border-radius: 10px;
       }
 
       .composer {
         grid-template-columns: 1fr;
-      }
-
-      .composer button {
-        width: 100%;
       }
     }
   </style>
@@ -150,22 +145,24 @@
 <body>
   <main class="chat" aria-label="Chat interface">
     <header class="chat-header">
-      <h1 class="chat-title">Basic Chat</h1>
+      <h1 class="chat-title">SecureChat Room</h1>
       <span id="connection-status" class="status">Connecting...</span>
     </header>
 
     <ul id="messages" class="messages"></ul>
 
     <form class="composer" onsubmit="return send(event)">
-      <input type="text" name="message" minlength="1" maxlength="500" placeholder="Type a message" autocomplete="off" required />
-      <button type="submit">Send</button>
+      <input type="text" name="message" minlength="1" maxlength="500" placeholder="Type a message" autocomplete="off" required>
+      <button id="send" type="submit">Send</button>
+      <a class="home-link" href="/">Home</a>
     </form>
   </main>
 
   <script>
     const messages = document.getElementById("messages");
-    const status = document.getElementById("connection-status");
-    const ws = new WebSocket(`ws://${location.host}/ws`);
+    const statusEl = document.getElementById("connection-status");
+    const wsProtocol = location.protocol === "https:" ? "wss" : "ws";
+    const ws = new WebSocket(`${wsProtocol}://${location.host}/ws`);
 
     function appendMessage(content) {
       const li = document.createElement("li");
@@ -176,11 +173,11 @@
     }
 
     ws.addEventListener("open", () => {
-      status.textContent = "Connected";
+      statusEl.textContent = "Connected";
     });
 
     ws.addEventListener("close", () => {
-      status.textContent = "Disconnected";
+      statusEl.textContent = "Disconnected";
     });
 
     ws.addEventListener("message", (event) => {
@@ -190,14 +187,13 @@
     function send(event) {
       event.preventDefault();
 
-      const form = event.target;
-      const message = (new FormData(form)).get("message");
+      const message = (new FormData(event.target)).get("message");
 
       if (message && ws.readyState === WebSocket.OPEN) {
         ws.send(message);
       }
 
-      form.reset();
+      event.target.reset();
       return false;
     }
   </script>
