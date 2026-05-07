@@ -43,7 +43,7 @@
     .chat {
       width: min(760px, 100%);
       height: min(80vh, 680px);
-      background: var(--panel);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(0,0,0,0) 100%);
       border: 1px solid rgba(255,255,255,0.03);
       border-radius: 12px;
       overflow: hidden;
@@ -96,22 +96,11 @@
       color: var(--muted);
     }
 
-    .check-button {
-      min-height: 34px;
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 8px;
-      background: transparent;
-      color: var(--text);
-      padding: 0 10px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
     .message {
       max-width: min(85%, 540px);
       padding: 10px 12px;
       border-radius: 10px;
-      background: var(--panel);
+      background: linear-gradient(180deg, rgba(43,124,255,0.04), rgba(0,0,0,0.04));
       font-size: 0.95rem;
       line-height: 1.4;
       word-break: break-word;
@@ -232,8 +221,6 @@
       </div>
       <div style="display:flex;align-items:center;gap:10px">
         <span id="connection-status" class="status">Connecting...</span>
-        <span id="encryption-status" class="status">Encryption: initializing...</span>
-        <button id="encryption-check" class="check-button" type="button">Verify</button>
         <div style="display:flex;align-items:center;gap:8px">
           <span id="username-display" class="status" style="font-weight:600"></span>
           <button id="edit-username" title="Change name" style="background:none;border:0;cursor:pointer;color:var(--brand);font-weight:600">Edit</button>
@@ -248,7 +235,7 @@
 
     <div id="join-banner" class="join-banner" aria-hidden="false">
       <div style="display:flex;gap:10px;align-items:center">
-        <strong style="font-size:0.95rem">Encrypted Join URL</strong>
+        <strong style="font-size:0.95rem">Join URL</strong>
         <span class="join-url" style="font-family:monospace;color:var(--muted)"></span>
       </div>
       <div>
@@ -265,76 +252,15 @@
   </main>
 
   <script>
-    (() => {
     const messages = document.getElementById("messages");
     const status = document.getElementById("connection-status");
-    const encryptionStatus = document.getElementById("encryption-status");
     const protocol = location.protocol === "https:" ? "wss" : "ws";
     const ws = new WebSocket(`${protocol}://${location.host}/ws`);
     const usernameKey = "chat-username";
-    const roomKeyPrefix = "chat-room-key";
-    const textEncoder = new TextEncoder();
-    const textDecoder = new TextDecoder();
-    let aesKey = null;
 
     function generateUsername() {
       const suffix = Math.floor(1000 + Math.random() * 9000);
       return `Guest-${suffix}`;
-    }
-
-    function bytesToBase64(bytes) {
-      let binary = "";
-      bytes.forEach((value) => {
-        binary += String.fromCharCode(value);
-      });
-      return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
-    }
-
-    function base64ToBytes(value) {
-      const padded = value.replaceAll("-", "+").replaceAll("_", "/") + "==".slice((value.length + 2) % 4);
-      const binary = atob(padded);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i += 1) {
-        bytes[i] = binary.charCodeAt(i);
-      }
-      return bytes;
-    }
-
-    function getOrCreateRoomKey() {
-      const hash = new URLSearchParams(location.hash.replace(/^#/, ""));
-      let roomKey = hash.get("k");
-      if (!roomKey) {
-        const randomBytes = new Uint8Array(16);
-        crypto.getRandomValues(randomBytes);
-        roomKey = bytesToBase64(randomBytes);
-        hash.set("k", roomKey);
-        history.replaceState(null, "", `${location.pathname}#${hash.toString()}`);
-      }
-      localStorage.setItem(roomKeyPrefix, roomKey);
-      return roomKey;
-    }
-
-    async function deriveEncryptionKey(roomKey) {
-      const hashed = await crypto.subtle.digest("SHA-256", textEncoder.encode(roomKey));
-      return crypto.subtle.importKey("raw", hashed, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
-    }
-
-    async function encryptPayload(payload) {
-      const iv = crypto.getRandomValues(new Uint8Array(12));
-      const plaintext = textEncoder.encode(JSON.stringify(payload));
-      const cipherBuffer = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, aesKey, plaintext);
-      return {
-        kind: "encrypted",
-        iv: bytesToBase64(iv),
-        data: bytesToBase64(new Uint8Array(cipherBuffer)),
-      };
-    }
-
-    async function decryptPayload(envelope) {
-      const iv = base64ToBytes(envelope.iv);
-      const cipherBytes = base64ToBytes(envelope.data);
-      const plainBuffer = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, aesKey, cipherBytes);
-      return JSON.parse(textDecoder.decode(plainBuffer));
     }
 
     let username = localStorage.getItem(usernameKey) || generateUsername();
@@ -356,16 +282,6 @@
       messages.scrollTop = messages.scrollHeight;
     }
 
-    function setEncryptionStatus(text) {
-      if (encryptionStatus) {
-        encryptionStatus.textContent = text;
-      }
-    }
-
-    function formatPayload(payload) {
-      return `${payload.name}: ${payload.text}`;
-    }
-
     ws.addEventListener("open", () => {
       status.textContent = `Connected as ${username}`;
     });
@@ -374,35 +290,22 @@
       status.textContent = "Disconnected";
     });
 
-    ws.addEventListener("message", async (event) => {
+    ws.addEventListener("message", (event) => {
       try {
-        const envelope = JSON.parse(event.data);
-        if (envelope && envelope.kind === "encrypted") {
-          const payload = await decryptPayload(envelope);
-          appendMessage(formatPayload(payload));
-          setEncryptionStatus("Encryption: active");
-          return;
-        }
-
-        appendMessage(formatMessage(envelope));
-        setEncryptionStatus("Encryption: inactive");
+        appendMessage(formatMessage(JSON.parse(event.data)));
       } catch {
         appendMessage(event.data);
-        setEncryptionStatus("Encryption: inactive");
       }
     });
 
-    async function send(event) {
+    function send(event) {
       event.preventDefault();
 
       const form = event.target;
       const message = (new FormData(form)).get("message");
 
       if (message && ws.readyState === WebSocket.OPEN) {
-        const payload = { name: username, text: message };
-        const envelope = aesKey ? await encryptPayload(payload) : payload;
-        ws.send(JSON.stringify(envelope));
-        setEncryptionStatus(aesKey ? "Encryption: active" : "Encryption: inactive");
+        ws.send(JSON.stringify({ name: username, text: message }));
       }
 
       form.reset();
@@ -442,17 +345,6 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      const roomKey = getOrCreateRoomKey();
-      deriveEncryptionKey(roomKey)
-        .then((key) => {
-          aesKey = key;
-          setEncryptionStatus('Encryption: active');
-        })
-        .catch(() => {
-          aesKey = null;
-          setEncryptionStatus('Encryption: unavailable');
-        });
-
       // sync username variable
       const stored = localStorage.getItem(usernameKey) || username;
       setUsername(stored);
@@ -494,31 +386,10 @@
         });
       }
 
-      const verifyButton = document.getElementById('encryption-check');
-      if (verifyButton) {
-        verifyButton.addEventListener('click', async () => {
-          if (!aesKey) {
-            setEncryptionStatus('Encryption check: unavailable');
-            return;
-          }
-
-          const testPayload = { name: 'check', text: 'sample' };
-          const envelope = await encryptPayload(testPayload);
-          const decrypted = await decryptPayload(envelope);
-          const encryptedLooksOpaque = envelope.data !== bytesToBase64(textEncoder.encode(JSON.stringify(testPayload)));
-
-          if (decrypted.name === testPayload.name && decrypted.text === testPayload.text && encryptedLooksOpaque) {
-            setEncryptionStatus('Encryption check: passed');
-          } else {
-            setEncryptionStatus('Encryption check: failed');
-          }
-        });
-      }
-
       // join banner
       const banner = document.getElementById('join-banner');
       if (banner) {
-        const share = location.href;
+        const share = `${location.protocol}//${location.host}`;
         const urlSpan = banner.querySelector('.join-url');
         if (urlSpan) urlSpan.textContent = share;
         const copyBtn = banner.querySelector('.copy-join');
@@ -538,7 +409,6 @@
         }
       }
     });
-    })();
   </script>
 </body>
 </html>
