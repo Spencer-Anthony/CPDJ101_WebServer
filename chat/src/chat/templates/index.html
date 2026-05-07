@@ -216,19 +216,16 @@
   <main class="chat" aria-label="Chat interface">
     <header class="chat-header">
       <div style="display:flex;align-items:center;gap:12px">
-        <h1 class="chat-title">Basic Chat</h1>
-        <button id="theme-toggle" title="Toggle theme" style="background:none;border:0;cursor:pointer;color:var(--muted);font-size:0.95rem;">🌙</button>
+        <h1 class="chat-title">Chat Room</h1>
+        <button id="theme-toggle" title="Toggle theme" style="background:none;border:0;cursor:pointer;color:var(--muted);font-size:0.95rem;">Toggle Dark</button>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
         <span id="connection-status" class="status">Connecting...</span>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span id="username-display" class="status" style="font-weight:600"></span>
-          <button id="edit-username" title="Change name" style="background:none;border:0;cursor:pointer;color:var(--brand);font-weight:600">Edit</button>
-          <div id="username-editor" class="username-editor" aria-label="Username editor">
-            <input id="username-input" type="text" maxlength="32" aria-label="Display name" />
-            <button id="username-save" type="button">Save</button>
-            <button id="username-cancel" type="button" class="secondary">Cancel</button>
-          </div>
+        <button id="edit-username" title="Change name" style="background:none;border:0;cursor:pointer;color:var(--brand);font-weight:600">Edit</button>
+        <div id="username-editor" class="username-editor" aria-label="Username editor">
+          <input id="username-input" type="text" maxlength="32" aria-label="Display name" />
+          <button id="username-save" type="button">Save</button>
+          <button id="username-cancel" type="button" class="secondary">Cancel</button>
         </div>
       </div>
     </header>
@@ -318,8 +315,6 @@
       localStorage.setItem(key, chosen);
       // update in-memory and UI
       username = chosen;
-      const display = document.getElementById('username-display');
-      if (display) display.textContent = chosen;
       const statusEl = document.getElementById('connection-status');
       if (statusEl) statusEl.textContent = ws.readyState === WebSocket.OPEN ? `Connected as ${chosen}` : `Connecting...`;
     }
