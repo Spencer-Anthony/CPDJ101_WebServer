@@ -7,8 +7,8 @@ from chat.broker import Broker
 
 app = Quart(__name__)
 
-def run() -> None:
-    app.run()
+def run(port: int = 80, host: str = "0.0.0.0") -> None:
+    app.run(host=host, port=port)
 
 @app.get("/")
 async def index():
